@@ -1116,21 +1116,29 @@ function _adodb_debug_execute(&$zthis, $sql, $inputarr)
 
 	$dbt = $zthis->databaseType;
 	if (isset($zthis->dsnType)) $dbt .= '-'.$zthis->dsnType;
-	if ($inBrowser) {
-		if ($ss) {
-			$ss = '<code>'.htmlspecialchars($ss).'</code>';
-		}
-		if ($zthis->debug === -1)
-			ADOConnection::outp( "<br>\n($dbt): ".htmlspecialchars($sqlTxt)." &nbsp; $ss\n<br>\n",false);
-		else if ($zthis->debug !== -99)
-			ADOConnection::outp( "<hr>\n($dbt): ".htmlspecialchars($sqlTxt)." &nbsp; $ss\n<hr>\n",false);
-	} else {
-		$ss = "\n   ".$ss;
-		if ($zthis->debug !== -99)
-			ADOConnection::outp("-----<hr>\n($dbt): ".$sqlTxt." $ss\n-----<hr>\n",false);
-	}
+
+    $startTime = microtime(true);
 
 	$qID = $zthis->_query($sql,$inputarr);
+
+    //Execution time in ms
+    $executionTime = (microtime(true) - $startTime) * 1000;
+
+    if ($inBrowser) {
+        $tmpl = $executionTime > 200 ? "<span style=\"color:" . ($executionTime > 1000 ? 'red' : 'blue') . ";\">%0.2f ms</span>: " : "%0.2f ms: ";
+
+        if ($ss) {
+            $ss = '<code>'.htmlspecialchars($ss).'</code>';
+        }
+        if ($zthis->debug === -1)
+            ADOConnection::outp( "<br>\n($dbt): " . sprintf($tmpl, $executionTime) . htmlspecialchars($sqlTxt)." &nbsp; $ss\n<br>\n",false);
+        else if ($zthis->debug !== -99)
+            ADOConnection::outp( "<hr>\n($dbt): " . sprintf($tmpl, $executionTime) . htmlspecialchars($sqlTxt)." &nbsp; $ss\n<hr>\n",false);
+    } else {
+        $ss = "\n   ".$ss;
+        if ($zthis->debug !== -99)
+            ADOConnection::outp("-----<hr>\n($dbt): ". sprintf("%0.2f ms: ", $executionTime) . $sqlTxt." $ss\n-----<hr>\n",false);
+    }
 
 	/*
 		Alexios Fakios notes that ErrorMsg() must be called before ErrorNo() for mssql
