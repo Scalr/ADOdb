@@ -1150,12 +1150,14 @@ if (!defined('_ADODB_LAYER')) {
 				// array matches what the query expects
 				$element0 = reset($inputarr);
 				if ($nparams != count($element0)) {
-					$this->outp_throw(
+					ADOConnection::outp(
 						"Input array has " . count($element0) .
-						" params, does not match query: '" . htmlspecialchars($sql) . "'",
-						'Execute'
+						" params, does not match query: '" . htmlspecialchars($sql)
 					);
-					return false;
+
+					if ($nparams > count($element0)) {
+						return false;
+					}
 				}
 
 				// clean memory
@@ -1165,7 +1167,11 @@ if (!defined('_ADODB_LAYER')) {
 					$sql = ''; $i = 0;
 					//Use each() instead of foreach to reduce memory usage -mikefedyk
 					while(list(, $v) = each($arr)) {
-						$sql .= $sqlarr[$i];
+						$sql .= $sqlarr[$i++];
+
+						if ($i > $nparams) {
+							break;
+						}
 						// from Ron Baldwin <ron.baldwin#sourceprose.com>
 						// Only quote string types
 						$typ = gettype($v);
@@ -1186,11 +1192,6 @@ if (!defined('_ADODB_LAYER')) {
 							$sql .= 'NULL';
 						} else {
 							$sql .= $v;
-						}
-						$i += 1;
-
-						if ($i == $nparams) {
-							break;
 						}
 					} // while
 					if (isset($sqlarr[$i])) {
