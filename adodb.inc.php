@@ -443,6 +443,7 @@ if (!defined('_ADODB_LAYER')) {
 	//
 	// PUBLIC VARS
 	//
+    var $numberQueries = 0;
 	var $dataProvider = 'native';
 	var $databaseType = '';		/// RDBMS currently in use, eg. odbc, mysql, mssql
 	var $database = '';			/// Name of database to be used.
@@ -1278,6 +1279,9 @@ if (!defined('_ADODB_LAYER')) {
 		} else {
 			$this->_queryID = @$this->_query($sql,$inputarr);
 		}
+
+        //Counts the number of the queries
+        $this->numberQueries++;
 
 		// ************************
 		// OK, query executed
