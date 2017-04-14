@@ -31,7 +31,10 @@
 	},
 
 	"autoload" : {
-		"files" : ["adodb.inc.php"]
+		"files" : [
+			"adodb.inc.php",
+			"adodb-exceptions.inc.php"
+		]
 	}
 
 }
