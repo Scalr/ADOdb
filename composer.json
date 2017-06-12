@@ -33,6 +33,7 @@
 	"autoload" : {
 		"files" : [
 			"adodb.inc.php",
+			"drivers/adodb-mysqli.inc.php",
 			"adodb-exceptions.inc.php"
 		]
 	}
