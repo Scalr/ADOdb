@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.21.0-dev  ??-???-2016
+@version   v5.20.12  30-Mar-2018
 @copyright (c) 2000-2013 John Lim. All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -113,8 +113,10 @@ class ADODB_sybase extends ADOConnection {
 		if ($this->_logsql) return $this->_errorMsg;
 		if (function_exists('sybase_get_last_message'))
 			$this->_errorMsg = sybase_get_last_message();
-		else
-			$this->_errorMsg = isset($php_errormsg) ? $php_errormsg : 'SYBASE error messages not supported on this platform';
+		else {
+			$this->_errorMsg = 'SYBASE error messages not supported on this platform';
+		}
+
 		return $this->_errorMsg;
 	}
 
@@ -129,9 +131,9 @@ class ADODB_sybase extends ADOConnection {
 		}
 
 		if ($this->charSet) {
-			$this->_connectionID = sybase_connect($argHostname,$argUsername,$argPassword, $this->charSet);
+			$this->_connectionID = @sybase_connect($argHostname,$argUsername,$argPassword, $this->charSet);
 		} else {
-			$this->_connectionID = sybase_connect($argHostname,$argUsername,$argPassword);
+			$this->_connectionID = @sybase_connect($argHostname,$argUsername,$argPassword);
 		}
 
 		if ($this->_connectionID === false) return false;
@@ -150,9 +152,9 @@ class ADODB_sybase extends ADOConnection {
 		}
 
 		if ($this->charSet) {
-			$this->_connectionID = sybase_pconnect($argHostname,$argUsername,$argPassword, $this->charSet);
+			$this->_connectionID = @sybase_pconnect($argHostname,$argUsername,$argPassword, $this->charSet);
 		} else {
-			$this->_connectionID = sybase_pconnect($argHostname,$argUsername,$argPassword);
+			$this->_connectionID = @sybase_pconnect($argHostname,$argUsername,$argPassword);
 		}
 
 		if ($this->_connectionID === false) return false;
