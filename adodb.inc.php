@@ -14,7 +14,7 @@
 /**
 	\mainpage
 
-	@version   v5.21.0-dev  ??-???-2016
+	@version   v5.20.12  30-Mar-2018
 	@copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 	@copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -248,7 +248,7 @@ if (!defined('_ADODB_LAYER')) {
 		/**
 		 * ADODB version as a string.
 		 */
-		$ADODB_vers = 'v5.21.0-dev  ??-???-2016';
+		$ADODB_vers = 'v5.20.12  30-Mar-2018';
 
 		/**
 		 * Determines whether recordset->RecordCount() is used.
@@ -1193,8 +1193,7 @@ if (!defined('_ADODB_LAYER')) {
 
 				foreach($inputarr as $arr) {
 					$sql = ''; $i = 0;
-					//Use each() instead of foreach to reduce memory usage -mikefedyk
-					while(list(, $v) = each($arr)) {
+					foreach ($arr as $v) {
 						$sql .= $sqlarr[$i++];
 
 						if ($i > $nparams) {
@@ -1537,87 +1536,64 @@ if (!defined('_ADODB_LAYER')) {
 	 * @param [secs2cache]		is a private parameter only used by jlim
 	 * @return		the recordset ($rs->databaseType == 'array')
 	 */
-	function SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0) {
-		$nrows = (int)$nrows;
-		$offset = (int)$offset;
-
-		if ($this->hasTop && $nrows > 0) {
-			// suggested by Reinhard Balling. Access requires top after distinct
-			// Informix requires first before distinct - F Riosa
-			$ismssql = (strpos($this->databaseType,'mssql') !== false);
-			if ($ismssql) {
-				$isaccess = false;
-			} else {
-				$isaccess = (strpos($this->databaseType,'access') !== false);
-			}
-
-			if ($offset <= 0) {
-				// access includes ties in result
-				if ($isaccess) {
-					$sql = preg_replace(
-						'/(^\s*select\s+(distinctrow|distinct)?)/i',
-						'\\1 '.$this->hasTop.' '.$nrows.' ',
-						$sql
-					);
-
-					if ($secs2cache != 0) {
-						$ret = $this->CacheExecute($secs2cache, $sql,$inputarr);
-					} else {
-						$ret = $this->Execute($sql,$inputarr);
-					}
-					return $ret; // PHP5 fix
-				} else if ($ismssql){
-					$sql = preg_replace(
-						'/(^\s*select\s+(distinctrow|distinct)?)/i',
-						'\\1 '.$this->hasTop.' '.$nrows.' ',
-						$sql
-					);
-				} else {
-					$sql = preg_replace(
-						'/(^\s*select\s)/i',
-						'\\1 '.$this->hasTop.' '.$nrows.' ',
-						$sql
-					);
-				}
-			} else {
-				$nn = $nrows + $offset;
-				if ($isaccess || $ismssql) {
-					$sql = preg_replace(
-						'/(^\s*select\s+(distinctrow|distinct)?)/i',
-						'\\1 '.$this->hasTop.' '.$nn.' ',
-						$sql
-					);
-				} else {
-					$sql = preg_replace(
-						'/(^\s*select\s)/i',
-						'\\1 '.$this->hasTop.' '.$nn.' ',
-						$sql
-					);
-				}
-			}
-		}
-
-		// if $offset>0, we want to skip rows, and $ADODB_COUNTRECS is set, we buffer  rows
-		// 0 to offset-1 which will be discarded anyway. So we disable $ADODB_COUNTRECS.
-		global $ADODB_COUNTRECS;
-
-		$savec = $ADODB_COUNTRECS;
-		$ADODB_COUNTRECS = false;
-
-
-		if ($secs2cache != 0) {
-			$rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
-		} else {
-			$rs = $this->Execute($sql,$inputarr);
-		}
-
-		$ADODB_COUNTRECS = $savec;
-		if ($rs && !$rs->EOF) {
-			$rs = $this->_rs2rs($rs,$nrows,$offset);
-		}
-		//print_r($rs);
-		return $rs;
-	}
+    function SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0) {
+        $nrows = (int)$nrows;
+        $offset = (int)$offset;
+        if ($this->hasTop && $nrows > 0) {
+            // suggested by Reinhard Balling. Access requires top after distinct
+            // Informix requires first before distinct - F Riosa
+            $ismssql = (strpos($this->databaseType,'mssql') !== false);
+            if ($ismssql) {
+                $isaccess = false;
+            } else {
+                $isaccess = (strpos($this->databaseType,'access') !== false);
+            }
+            if ($offset <= 0) {
+                // access includes ties in result
+                if ($isaccess) {
+                    $sql = preg_replace(
+                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+                    if ($secs2cache != 0) {
+                        $ret = $this->CacheExecute($secs2cache, $sql,$inputarr);
+                    } else {
+                        $ret = $this->Execute($sql,$inputarr);
+                    }
+                    return $ret; // PHP5 fix
+                } else if ($ismssql){
+                    $sql = preg_replace(
+                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+                } else {
+                    $sql = preg_replace(
+                        '/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+                }
+            } else {
+                $nn = $nrows + $offset;
+                if ($isaccess || $ismssql) {
+                    $sql = preg_replace(
+                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
+                } else {
+                    $sql = preg_replace(
+                        '/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
+                }
+            }
+        }
+        // if $offset>0, we want to skip rows, and $ADODB_COUNTRECS is set, we buffer  rows
+        // 0 to offset-1 which will be discarded anyway. So we disable $ADODB_COUNTRECS.
+        global $ADODB_COUNTRECS;
+        $savec = $ADODB_COUNTRECS;
+        $ADODB_COUNTRECS = false;
+        if ($secs2cache != 0) {
+            $rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
+        } else {
+            $rs = $this->Execute($sql,$inputarr);
+        }
+        $ADODB_COUNTRECS = $savec;
+        if ($rs && !$rs->EOF) {
+            $rs = $this->_rs2rs($rs,$nrows,$offset);
+        }
+        //print_r($rs);
+        return $rs;
+    }
 
 	/**
 	* Create serializable recordset. Breaks rs link to connection.
@@ -2460,6 +2436,7 @@ if (!defined('_ADODB_LAYER')) {
 	 */
 	function Close() {
 		$rez = $this->_close();
+		$this->_queryID = false;
 		$this->_connectionID = false;
 		return $rez;
 	}
@@ -3108,81 +3085,58 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 	}
 
 	/**
-	* Returns the maximum size of a MetaType C field. If the method
-	* is not defined in the driver returns ADODB_STRINGMAX_NOTSET
-	*
-	* @return int
-	*/
-	function charMax()
-	{
-		return ADODB_STRINGMAX_NOTSET;
+	 * Get the last error recorded by PHP and clear the message.
+	 *
+	 * By clearing the message, it becomes possible to detect whether a new error
+	 * has occurred, even when it is the same error as before being repeated.
+	 *
+	 * @return array|null Array if an error has previously occurred. Null otherwise.
+	 */
+	protected function resetLastError() {
+		$error = error_get_last();
+
+		if (is_array($error)) {
+			$error['message'] = '';
+		}
+
+		return $error;
 	}
 
 	/**
-	* Returns the maximum size of a MetaType X field. If the method
-	* is not defined in the driver returns ADODB_STRINGMAX_NOTSET
-	*
-	* @return int
-	*/
-	function textMax()
-	{
-		return ADODB_STRINGMAX_NOTSET;
-	}
-
-	/**
-	* Returns a substring of a varchar type field
-	*
-	* Some databases have variations of the parameters, which is why
-	* we have an ADOdb function for it
-	*
-	* @param	string	$fld	The field to sub-string
-	* @param	int		$start	The start point
-	* @param	int		$length	An optional length
-	*
-	* @return	The SQL text
-	*/
-	function substr($fld,$start,$length=0) {
-		$text = "{$this->substr}($fld,$start";
-		if ($length > 0)
-			$text .= ",$length";
-		$text .= ')';
-		return $text;
-	}
-
-	/*
-	 * Formats the date into Month only format MM with leading zeroes
+	 * Compare a previously stored error message with the last error recorded by PHP
+	 * to determine whether a new error has occured.
 	 *
-	 * @param	string		$fld	The name of the date to format
+	 * @param array|null $old Optional. Previously stored return value of error_get_last().
 	 *
-	 * @return	string				The SQL text
+	 * @return string The error message if a new error has occured
+	 *                or an empty string if no (new) errors have occured..
 	 */
-	function month($fld) {
-		$x = $this->sqlDate('m',$fld);
+	protected function getChangedErrorMsg($old = null) {
+		$new = error_get_last();
 
-		return $x;
-	}
+		if (is_null($new)) {
+			// No error has occured yet at all.
+			return '';
+		}
 
-	/*
-	 * Formats the date into Day only format DD with leading zeroes
-	 *
-	 * @param	string		$fld	The name of the date to format
-	 * @return	string		The SQL text
-	 */
-	function day($fld) {
-		$x = $this->sqlDate('d',$fld);
-		return $x;
-	}
+		if (is_null($old)) {
+			// First error recorded.
+			return $new['message'];
+		}
 
-	/*
-	 * Formats the date into year only format YYYY
-	 *
-	 * @param	string		$fld The name of the date to format
-	 *
-	 * @return	string		The SQL text
-	 */
-	function year($fld) {
-		$x = $this->sqlDate('Y',$fld);
-		return $x;
+		$changed = false;
+		foreach($new as $key => $value) {
+			if ($new[$key] !== $old[$key]) {
+				$changed = true;
+				break;
+			}
+		}
+
+		if ($changed === true) {
+			return $new['message'];
+		}
+
+		return '';
 	}
 
 
@@ -4844,8 +4798,8 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 				break;
 		}
 
-		$file = ADODB_DIR."/drivers/adodb-".$db.".inc.php";
-		@include_once($file);
+		$file = "drivers/adodb-$db.inc.php";
+		@include_once(ADODB_DIR . '/' . $file);
 		$ADODB_LASTDB = $class;
 		if (class_exists("ADODB_" . $class)) {
 			return $class;
