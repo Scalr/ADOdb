@@ -6,7 +6,7 @@ global $ADODB_INCLUDED_LIB;
 $ADODB_INCLUDED_LIB = 1;
 
 /*
- @version   v5.20.12  30-Mar-2018
+  @version   v5.20.13  06-Aug-2018
   @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
   @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -416,14 +416,16 @@ function _adodb_getcount(&$zthis, $sql,$inputarr=false,$secs2cache=0)
 			} else
 				$rewritesql = "SELECT COUNT(*) FROM (".$rewritesql.")";
 
-		} else if (strncmp($zthis->databaseType,'postgres',8) == 0
-			|| strncmp($zthis->databaseType,'mysql',5) == 0
-			|| strncmp($zthis->databaseType,'mssql',5) == 0
-		) {
-			$rewritesql = "SELECT COUNT(*) FROM ($rewritesql) _ADODB_ALIAS_";
-		} else {
-			$rewritesql = "SELECT COUNT(*) FROM ($rewritesql)";
-		}
+        } else if (strncmp($zthis->databaseType,'postgres',8) == 0
+            || strncmp($zthis->databaseType,'mysql',5) == 0
+	    || strncmp($zthis->databaseType,'mssql',5) == 0
+            || strncmp($zthis->dsnType,'sqlsrv',5) == 0
+            || strncmp($zthis->dsnType,'mssql',5) == 0
+        ){
+		    $rewritesql = "SELECT COUNT(*) FROM ($rewritesql) _ADODB_ALIAS_";
+        } else {
+            $rewritesql = "SELECT COUNT(*) FROM ($rewritesql)";
+        }
 	} else {
 		// now replace SELECT ... FROM with SELECT COUNT(*) FROM
 		if ( strpos($sql, '_ADODB_COUNT') !== FALSE ) {
@@ -468,11 +470,18 @@ function _adodb_getcount(&$zthis, $sql,$inputarr=false,$secs2cache=0)
 		if (!$rstest) $rstest = $zthis->Execute($sql,$inputarr);
 	}
 	if ($rstest) {
-		$qryRecs = $rstest->RecordCount();
+	  		$qryRecs = $rstest->RecordCount();
 		if ($qryRecs == -1) {
-			// some databases will return -1 on MoveLast() - change to MoveNext()
-			while(!$rstest->EOF) {
-				$rstest->MoveNext();
+		global $ADODB_EXTENSION;
+		// some databases will return -1 on MoveLast() - change to MoveNext()
+			if ($ADODB_EXTENSION) {
+				while(!$rstest->EOF) {
+					adodb_movenext($rstest);
+				}
+			} else {
+				while(!$rstest->EOF) {
+					$rstest->MoveNext();
+				}
 			}
 			$qryRecs = $rstest->_currentRow;
 		}
@@ -762,7 +771,7 @@ function _adodb_getupdatesql(&$zthis,&$rs, $arrFields,$forceUpdate=false,$magicq
 				if (preg_match('/\s(ORDER\s.*)/is', $whereClause[1], $discard));
 				else if (preg_match('/\s(LIMIT\s.*)/is', $whereClause[1], $discard));
 				else if (preg_match('/\s(FOR UPDATE.*)/is', $whereClause[1], $discard));
-				else preg_match('/\s.*(\) WHERE .*)/is', $whereClause[1], $discard); # see http://sourceforge.net/tracker/index.php?func=detail&aid=1379638&group_id=42718&atid=433976
+				else preg_match('/\s.*(\) WHERE .*)/is', $whereClause[1], $discard); # see https://sourceforge.net/p/adodb/bugs/37/
 			} else
 				$whereClause = array(false,false);
 
@@ -878,22 +887,22 @@ static $cacheCols;
                {
                     switch ($force) {
 
-                        case ADODB_FORCE_IGNORE: // we must always set null if missing
+                        case 0: // we must always set null if missing
 							$bad = true;
 							break;
 
-                        case ADODB_FORCE_NULL:
+                        case 1:
                             $values  .= "null, ";
                         break;
 
-                        case ADODB_FORCE_EMPTY:
+                        case 2:
                             //Set empty
                             $arrFields[$upperfname] = "";
                             $values .= _adodb_column_sql($zthis, 'I', $type, $upperfname, $fnameq,$arrFields, $magicq);
                         break;
 
 						default:
-                        case ADODB_FORCE_VALUE:
+                        case 3:
                             //Set the value that was given in array, so you can give both null and empty values
 							if (is_null($arrFields[$upperfname]) || $arrFields[$upperfname] === $zthis->null2null) {
 								$values  .= "null, ";
@@ -901,21 +910,6 @@ static $cacheCols;
                         		$values .= _adodb_column_sql($zthis, 'I', $type, $upperfname, $fnameq, $arrFields, $magicq);
              				}
               			break;
-
-						case ADODB_FORCE_NULL_AND_ZERO:
-							switch ($type)
-							{
-								case 'N':
-								case 'I':
-								case 'L':
-									$values .= '0, ';
-									break;
-								default:
-									$values .= "null, ";
-									break;
-							}
-						break;
-
              		} // switch
 
             /*********************************************************/
@@ -1119,29 +1113,21 @@ function _adodb_debug_execute(&$zthis, $sql, $inputarr)
 
 	$dbt = $zthis->databaseType;
 	if (isset($zthis->dsnType)) $dbt .= '-'.$zthis->dsnType;
-
-    $startTime = microtime(true);
+	if ($inBrowser) {
+		if ($ss) {
+			$ss = '<code>'.htmlspecialchars($ss).'</code>';
+		}
+		if ($zthis->debug === -1)
+			ADOConnection::outp( "<br>\n($dbt): ".htmlspecialchars($sqlTxt)." &nbsp; $ss\n<br>\n",false);
+		else if ($zthis->debug !== -99)
+			ADOConnection::outp( "<hr>\n($dbt): ".htmlspecialchars($sqlTxt)." &nbsp; $ss\n<hr>\n",false);
+	} else {
+		$ss = "\n   ".$ss;
+		if ($zthis->debug !== -99)
+			ADOConnection::outp("-----<hr>\n($dbt): ".$sqlTxt." $ss\n-----<hr>\n",false);
+	}
 
 	$qID = $zthis->_query($sql,$inputarr);
-
-    //Execution time in ms
-    $executionTime = (microtime(true) - $startTime) * 1000;
-
-    if ($inBrowser) {
-        $tmpl = $executionTime > 200 ? "<span style=\"color:" . ($executionTime > 1000 ? 'red' : 'blue') . ";\">%0.2f ms</span>: " : "%0.2f ms: ";
-
-        if ($ss) {
-            $ss = '<code>'.htmlspecialchars($ss).'</code>';
-        }
-        if ($zthis->debug === -1)
-            ADOConnection::outp( "<br>\n($dbt): " . sprintf($tmpl, $executionTime) . htmlspecialchars($sqlTxt)." &nbsp; $ss\n<br>\n",false);
-        else if ($zthis->debug !== -99)
-            ADOConnection::outp( "<hr>\n($dbt): " . sprintf($tmpl, $executionTime) . htmlspecialchars($sqlTxt)." &nbsp; $ss\n<hr>\n",false);
-    } else {
-        $ss = "\n   ".$ss;
-        if ($zthis->debug !== -99)
-            ADOConnection::outp("-----<hr>\n($dbt): ". sprintf("%0.2f ms: ", $executionTime) . $sqlTxt." $ss\n-----<hr>\n",false);
-    }
 
 	/*
 		Alexios Fakios notes that ErrorMsg() must be called before ErrorNo() for mssql

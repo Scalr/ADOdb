@@ -1,7 +1,7 @@
 <?php
 /*
 
- @version   v5.20.12  30-Mar-2018
+  @version   v5.20.13  06-Aug-2018
   @copyright (c) 2000-2013 John Lim. All rights reserved.
   @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -9,7 +9,7 @@
   Whenever there is any discrepancy between the two licenses,
   the BSD license will take precedence.
 
-  Latest version is available at http://adodb.sourceforge.net
+  Latest version is available at http://adodb.org/
 
   Code contributed by George Fourlanos <fou@infomap.gr>
 
@@ -106,6 +106,9 @@ END;
 	function __construct()
 	{
 		$this->_hasOciFetchStatement = ADODB_PHPVER >= 0x4200;
+		if (defined('ADODB_EXTENSION')) {
+			$this->rsPrefix .= 'ext_';
+		}
 	}
 
 	/*  function MetaColumns($table, $normalize=true) added by smondino@users.sourceforge.net*/
@@ -1562,7 +1565,13 @@ class ADORecordset_oci8 extends ADORecordSet {
 		$this->adodbFetchMode = $mode;
 		$this->_queryID = $queryID;
 	}
-
+	
+	/**
+	* Overrides the core destructor method as that causes problems here
+	*
+	* @return void
+	*/
+	function __destruct() {}
 
 	function Init()
 	{
@@ -1742,8 +1751,7 @@ class ADORecordset_oci8 extends ADORecordSet {
 			oci_free_cursor($this->_refcursor);
 			$this->_refcursor = false;
 		}
-		if (is_resource($this->_queryID))
-		   @oci_free_statement($this->_queryID);
+		@oci_free_statement($this->_queryID);
 		$this->_queryID = false;
 	}
 
@@ -1800,12 +1808,16 @@ class ADORecordset_oci8 extends ADORecordSet {
 			return 'I';
 
 		default:
-			return ADODB_DEFAULT_METATYPE;
+			return 'N';
 		}
 	}
 }
 
 class ADORecordSet_ext_oci8 extends ADORecordSet_oci8 {
+	function __construct($queryID,$mode=false)
+	{
+		parent::__construct($queryID, $mode);
+	}
 
 	function MoveNext()
 	{
