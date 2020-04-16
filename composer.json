@@ -27,15 +27,11 @@
 	},
 
 	"require" : {
-		"php" : "^5.3.2 || ^7.0"
+		"php" : ">=5.3.2"
 	},
 
 	"autoload" : {
-		"files" : [
-			"adodb.inc.php",
-			"drivers/adodb-mysqli.inc.php",
-			"adodb-exceptions.inc.php"
-		]
+		"files" : ["adodb.inc.php"]
 	}
 
 }
