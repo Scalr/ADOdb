@@ -14,7 +14,7 @@
 /**
 	\mainpage
 
-	@version   v5.20.13  06-Aug-2018
+	@version   v5.20.17  31-Mar-2020
 	@copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 	@copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -72,6 +72,7 @@ if (!defined('_ADODB_LAYER')) {
 		$ADODB_CACHE_DIR,	// directory to cache recordsets
 		$ADODB_CACHE,
 		$ADODB_CACHE_CLASS,
+		$ADODB_EXTENSION,   // ADODB extension installed
 		$ADODB_COMPAT_FETCH, // If $ADODB_COUNTRECS and this is true, $rs->fields is available on EOF
 		$ADODB_FETCH_MODE,	// DEFAULT, NUM, ASSOC or BOTH. Default follows native driver default...
 		$ADODB_GETONE_EOF,
@@ -81,52 +82,35 @@ if (!defined('_ADODB_LAYER')) {
 	// GLOBAL SETUP
 	//==============================================================================================
 
-	/*********************************************************
-	* Controls $ADODB_FORCE_TYPE mode. Default is ADODB_FORCE_VALUE (3).
-	* Used in GetUpdateSql and GetInsertSql functions. Thx to Niko, nuko#mbnet.fi
-	* @link http://adodb.org/dokuwiki/doku.php?id=v5:reference:adodb_force_type
-	*
-	* 0 = ignore empty fields. All empty fields in array are ignored.
-	* 1 = force null. All empty, php null and string 'null' fields are
-	*     changed to sql NULL values.
-	* 2 = force empty. All empty, php null and string 'null' fields are
-	*     changed to sql empty '' or 0 values.
-	* 3 = force value. Value is left as it is. Php null and string 'null'
-	*     are set to sql NULL values and empty fields '' are set to empty '' sql values.
-	* 4 = force value. Like 1 but numeric empty fields are set to zero.
-    */
+	$ADODB_EXTENSION = defined('ADODB_EXTENSION');
+
+	// ********************************************************
+	// Controls $ADODB_FORCE_TYPE mode. Default is ADODB_FORCE_VALUE (3).
+	// Used in GetUpdateSql and GetInsertSql functions. Thx to Niko, nuko#mbnet.fi
+	//
+	// 0 = ignore empty fields. All empty fields in array are ignored.
+	// 1 = force null. All empty, php null and string 'null' fields are changed to sql NULL values.
+	// 2 = force empty. All empty, php null and string 'null' fields are changed to sql empty '' or 0 values.
+	// 3 = force value. Value is left as it is. Php null and string 'null' are set to sql NULL values and empty fields '' are set to empty '' sql values.
+
 		define('ADODB_FORCE_IGNORE',0);
 		define('ADODB_FORCE_NULL',1);
 		define('ADODB_FORCE_EMPTY',2);
 		define('ADODB_FORCE_VALUE',3);
-		define('ADODB_FORCE_NULL_AND_ZERO',4);
 	// ********************************************************
 
 
-	/**
-	 * Constants for returned values from the charMax and textMax methods.
-	 * If not specifically defined in the driver, methods return the NOTSET value.
-	 */
-	define ('ADODB_STRINGMAX_NOTSET', -1);
-	define ('ADODB_STRINGMAX_NOLIMIT',-2);
+	if (!$ADODB_EXTENSION || ADODB_EXTENSION < 4.0) {
 
-	/*
-	* Defines the the default meta type returned
-	* when ADOdb encounters a type that it is not
-	* defined in the metaTypes.
-	*/
-	if (!defined('ADODB_DEFAULT_METATYPE'))
-		define ('ADODB_DEFAULT_METATYPE','N');
-
-	define('ADODB_BAD_RS','<p>Bad $rs in %s. Connection or SQL invalid. Try using $connection->debug=true;</p>');
+		define('ADODB_BAD_RS','<p>Bad $rs in %s. Connection or SQL invalid. Try using $connection->debug=true;</p>');
 
 	// allow [ ] @ ` " and . in table names
-	define('ADODB_TABLE_REGEX','([]0-9a-z_\:\"\`\.\@\[-]*)');
+		define('ADODB_TABLE_REGEX','([]0-9a-z_\:\"\`\.\@\[-]*)');
 
 	// prefetching used by oracle
-	if (!defined('ADODB_PREFETCH_ROWS')) {
-		define('ADODB_PREFETCH_ROWS',10);
-	}
+		if (!defined('ADODB_PREFETCH_ROWS')) {
+			define('ADODB_PREFETCH_ROWS',10);
+		}
 
 
 	/**
@@ -141,10 +125,10 @@ if (!defined('_ADODB_LAYER')) {
 	 *   - BOTH:    array(0 => 456, 'id' => 456, 1 => 'john', 'name' => 'john')
 	 *   - DEFAULT: driver-dependent
 	 */
-	define('ADODB_FETCH_DEFAULT', 0);
-	define('ADODB_FETCH_NUM', 1);
-	define('ADODB_FETCH_ASSOC', 2);
-	define('ADODB_FETCH_BOTH', 3);
+		define('ADODB_FETCH_DEFAULT', 0);
+		define('ADODB_FETCH_NUM', 1);
+		define('ADODB_FETCH_ASSOC', 2);
+		define('ADODB_FETCH_BOTH', 3);
 
 	/**
 	 * Associative array case constants
@@ -161,34 +145,34 @@ if (!defined('_ADODB_LAYER')) {
 	 * NOTE: This functionality is not implemented everywhere, it currently
 	 * works only with: mssql, odbc, oci8 and ibase derived drivers
 	 */
-	define('ADODB_ASSOC_CASE_LOWER', 0);
-	define('ADODB_ASSOC_CASE_UPPER', 1);
-	define('ADODB_ASSOC_CASE_NATIVE', 2);
+		define('ADODB_ASSOC_CASE_LOWER', 0);
+		define('ADODB_ASSOC_CASE_UPPER', 1);
+		define('ADODB_ASSOC_CASE_NATIVE', 2);
 
 
-	if (!defined('TIMESTAMP_FIRST_YEAR')) {
-		define('TIMESTAMP_FIRST_YEAR',100);
+		if (!defined('TIMESTAMP_FIRST_YEAR')) {
+			define('TIMESTAMP_FIRST_YEAR',100);
+		}
+
+		/**
+		 * AutoExecute constants
+		 * (moved from adodb-pear.inc.php since they are only used in here)
+		 */
+		define('DB_AUTOQUERY_INSERT', 1);
+		define('DB_AUTOQUERY_UPDATE', 2);
+
+
+		// PHP's version scheme makes converting to numbers difficult - workaround
+		$_adodb_ver = (float) PHP_VERSION;
+		if ($_adodb_ver >= 5.2) {
+			define('ADODB_PHPVER',0x5200);
+		} else if ($_adodb_ver >= 5.0) {
+			define('ADODB_PHPVER',0x5000);
+		} else {
+			die("PHP5 or later required. You are running ".PHP_VERSION);
+		}
+		unset($_adodb_ver);
 	}
-
-	/**
-	 * AutoExecute constants
-	 * (moved from adodb-pear.inc.php since they are only used in here)
-	 */
-	define('DB_AUTOQUERY_INSERT', 1);
-	define('DB_AUTOQUERY_UPDATE', 2);
-
-
-	// PHP's version scheme makes converting to numbers difficult - workaround
-	$_adodb_ver = (float) PHP_VERSION;
-	if ($_adodb_ver >= 5.2) {
-		define('ADODB_PHPVER',0x5200);
-	} else if ($_adodb_ver >= 5.0) {
-		define('ADODB_PHPVER',0x5000);
-	} else {
-		die("PHP5 or later required. You are running ".PHP_VERSION);
-	}
-	unset($_adodb_ver);
-
 
 
 	/**
@@ -237,15 +221,10 @@ if (!defined('_ADODB_LAYER')) {
 			}
 		}
 
-
-		// Initialize random number generator for randomizing cache flushes
-		// -- note Since PHP 4.2.0, the seed  becomes optional and defaults to a random value if omitted.
-		srand(((double)microtime())*1000000);
-
 		/**
 		 * ADODB version as a string.
 		 */
-		$ADODB_vers = 'v5.20.13  06-Aug-2018';
+		$ADODB_vers = 'v5.20.17  31-Mar-2020';
 
 		/**
 		 * Determines whether recordset->RecordCount() is used.
@@ -323,8 +302,8 @@ if (!defined('_ADODB_LAYER')) {
 		//print "Errorno ($fn errno=$errno m=$errmsg) ";
 		$thisConnection->_transOK = false;
 		if ($thisConnection->_oldRaiseFn) {
-			$fn = $thisConnection->_oldRaiseFn;
-			$fn($dbms, $fn, $errno, $errmsg, $p1, $p2,$thisConnection);
+			$errfn = $thisConnection->_oldRaiseFn;
+			$errfn($dbms, $fn, $errno, $errmsg, $p1, $p2,$thisConnection);
 		}
 	}
 
@@ -440,7 +419,6 @@ if (!defined('_ADODB_LAYER')) {
 	//
 	// PUBLIC VARS
 	//
-	var $numberQueries = 0;
 	var $dataProvider = 'native';
 	var $databaseType = '';		/// RDBMS currently in use, eg. odbc, mysql, mssql
 	var $database = '';			/// Name of database to be used.
@@ -536,17 +514,6 @@ if (!defined('_ADODB_LAYER')) {
 	var $_logsql = false;
 	var $_transmode = ''; // transaction mode
 
-
-	/**
-	 * Default Constructor.
-	 * We define it even though it does not actually do anything. This avoids
-	 * getting a PHP Fatal error:  Cannot call constructor if a subclass tries
-	 * to call its parent constructor.
-	 */
-	public function __construct()
-	{
-	}
-
 	/*
 	 * Additional parameters that may be passed to drivers in the connect string
 	 * Driver must be coded to accept the parameters
@@ -569,7 +536,7 @@ if (!defined('_ADODB_LAYER')) {
 	final public function setConnectionParameter($parameter,$value)
 	{
 
-		$this->connectionParameters[] = array($parameter=>$value);
+		$this->connectionParameters[$parameter] = $value;
 
 	}
 
@@ -1198,7 +1165,7 @@ if (!defined('_ADODB_LAYER')) {
 				if ($nparams != count($element0)) {
 					ADOConnection::outp(
 						"Input array has " . count($element0) .
-						" params, does not match query: '" . htmlspecialchars($sql)
+						" params, does not match query: '" . htmlspecialchars($sql) . "'"
 					);
 
 					if ($nparams > count($element0)) {
@@ -1213,7 +1180,6 @@ if (!defined('_ADODB_LAYER')) {
 					$sql = ''; $i = 0;
 					foreach ($arr as $v) {
 						$sql .= $sqlarr[$i++];
-
 						if ($i > $nparams) {
 							break;
 						}
@@ -1297,9 +1263,6 @@ if (!defined('_ADODB_LAYER')) {
 			$this->_queryID = @$this->_query($sql,$inputarr);
 		}
 
-		//Counts the number of the queries
-		$this->numberQueries++;
-
 		// ************************
 		// OK, query executed
 		// ************************
@@ -1324,17 +1287,8 @@ if (!defined('_ADODB_LAYER')) {
 			return $rs;
 		}
 
-		if ($this->dataProvider == 'pdo' && $this->databaseType != 'pdo') {
-			// PDO uses a slightly different naming convention for the
-			// recordset class if the database type is changed, so we must
-			// treat it specifically. The mysql driver leaves the
-			// databaseType as pdo
-			$rsclass = $this->rsPrefix . 'pdo_' . $this->databaseType;
-		} else {
-			$rsclass = $this->rsPrefix . $this->databaseType;
-		}
-
 		// return real recordset from select statement
+		$rsclass = $this->rsPrefix.$this->databaseType;
 		$rs = new $rsclass($this->_queryID,$this->fetchMode);
 		$rs->connection = $this; // Pablo suggestion
 		$rs->Init();
@@ -1554,64 +1508,72 @@ if (!defined('_ADODB_LAYER')) {
 	 * @param [secs2cache]		is a private parameter only used by jlim
 	 * @return		the recordset ($rs->databaseType == 'array')
 	 */
-    function SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0) {
-        $nrows = (int)$nrows;
-        $offset = (int)$offset;
-        if ($this->hasTop && $nrows > 0) {
-            // suggested by Reinhard Balling. Access requires top after distinct
-            // Informix requires first before distinct - F Riosa
-            $ismssql = (strpos($this->databaseType,'mssql') !== false);
-            if ($ismssql) {
-                $isaccess = false;
-            } else {
-                $isaccess = (strpos($this->databaseType,'access') !== false);
-            }
-            if ($offset <= 0) {
-                // access includes ties in result
-                if ($isaccess) {
-                    $sql = preg_replace(
-                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
-                    if ($secs2cache != 0) {
-                        $ret = $this->CacheExecute($secs2cache, $sql,$inputarr);
-                    } else {
-                        $ret = $this->Execute($sql,$inputarr);
-                    }
-                    return $ret; // PHP5 fix
-                } else if ($ismssql){
-                    $sql = preg_replace(
-                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
-                } else {
-                    $sql = preg_replace(
-                        '/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
-                }
-            } else {
-                $nn = $nrows + $offset;
-                if ($isaccess || $ismssql) {
-                    $sql = preg_replace(
-                        '/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
-                } else {
-                    $sql = preg_replace(
-                        '/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
-                }
-            }
-        }
-        // if $offset>0, we want to skip rows, and $ADODB_COUNTRECS is set, we buffer  rows
-        // 0 to offset-1 which will be discarded anyway. So we disable $ADODB_COUNTRECS.
-        global $ADODB_COUNTRECS;
-        $savec = $ADODB_COUNTRECS;
-        $ADODB_COUNTRECS = false;
-        if ($secs2cache != 0) {
-            $rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
-        } else {
-            $rs = $this->Execute($sql,$inputarr);
-        }
-        $ADODB_COUNTRECS = $savec;
-        if ($rs && !$rs->EOF) {
-            $rs = $this->_rs2rs($rs,$nrows,$offset);
-        }
-        //print_r($rs);
-        return $rs;
-    }
+	function SelectLimit($sql,$nrows=-1,$offset=-1, $inputarr=false,$secs2cache=0) {
+		$nrows = (int)$nrows;
+		$offset = (int)$offset;
+
+		if ($this->hasTop && $nrows > 0) {
+			// suggested by Reinhard Balling. Access requires top after distinct
+			// Informix requires first before distinct - F Riosa
+			$ismssql = (strpos($this->databaseType,'mssql') !== false);
+			if ($ismssql) {
+				$isaccess = false;
+			} else {
+				$isaccess = (strpos($this->databaseType,'access') !== false);
+			}
+
+			if ($offset <= 0) {
+					// access includes ties in result
+					if ($isaccess) {
+						$sql = preg_replace(
+						'/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+
+						if ($secs2cache != 0) {
+							$ret = $this->CacheExecute($secs2cache, $sql,$inputarr);
+						} else {
+							$ret = $this->Execute($sql,$inputarr);
+						}
+						return $ret; // PHP5 fix
+					} else if ($ismssql){
+						$sql = preg_replace(
+						'/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+					} else {
+						$sql = preg_replace(
+						'/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nrows.' ',$sql);
+					}
+			} else {
+				$nn = $nrows + $offset;
+				if ($isaccess || $ismssql) {
+					$sql = preg_replace(
+					'/(^\s*select\s+(distinctrow|distinct)?)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
+				} else {
+					$sql = preg_replace(
+					'/(^\s*select\s)/i','\\1 '.$this->hasTop.' '.$nn.' ',$sql);
+				}
+			}
+		}
+
+		// if $offset>0, we want to skip rows, and $ADODB_COUNTRECS is set, we buffer  rows
+		// 0 to offset-1 which will be discarded anyway. So we disable $ADODB_COUNTRECS.
+		global $ADODB_COUNTRECS;
+
+		$savec = $ADODB_COUNTRECS;
+		$ADODB_COUNTRECS = false;
+
+
+		if ($secs2cache != 0) {
+			$rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
+		} else {
+			$rs = $this->Execute($sql,$inputarr);
+		}
+
+		$ADODB_COUNTRECS = $savec;
+		if ($rs && !$rs->EOF) {
+			$rs = $this->_rs2rs($rs,$nrows,$offset);
+		}
+		//print_r($rs);
+		return $rs;
+	}
 
 	/**
 	* Create serializable recordset. Breaks rs link to connection.
@@ -1681,17 +1643,12 @@ if (!defined('_ADODB_LAYER')) {
 	}
 
 	function GetAssoc($sql, $inputarr=false,$force_array = false, $first2cols = false) {
-		global $ADODB_FETCH_MODE;
-
 		$rs = $this->Execute($sql, $inputarr);
-
 		if (!$rs) {
-			/*
-			* Execution failure
-			*/
 			return false;
 		}
-		return $rs->GetAssoc($force_array, $first2cols);
+		$arr = $rs->GetAssoc($force_array,$first2cols);
+		return $arr;
 	}
 
 	function CacheGetAssoc($secs2cache, $sql=false, $inputarr=false,$force_array = false, $first2cols = false) {
@@ -2187,10 +2144,6 @@ if (!defined('_ADODB_LAYER')) {
 		$forceUpdate means that even if the data has not changed, perform update.
 	 */
 	function AutoExecute($table, $fields_values, $mode = 'INSERT', $where = false, $forceUpdate = true, $magicq = false) {
-		if (empty($fields_values)) {
-			$this->outp_throw('AutoExecute: Empty fields array', 'AutoExecute');
-			return false;
-		}
 		if ($where === false && ($mode == 'UPDATE' || $mode == 2 /* DB_AUTOQUERY_UPDATE */) ) {
 			$this->outp_throw('AutoExecute: Illegal mode=UPDATE with empty WHERE clause', 'AutoExecute');
 			return false;
@@ -3157,7 +3110,6 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		return '';
 	}
 
-
 } // end class ADOConnection
 
 
@@ -3434,62 +3386,118 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 
 
 	/**
-	 * Generate a SELECT tag string from a recordset, and return the string.
-	 * If the recordset has 2 cols, we treat the 1st col as the containing
-	 * the text to display to the user, and 2nd col as the return value. Default
-	 * strings are compared with the FIRST column.
+	 * Generate a SELECT tag from a recordset, and return the HTML markup.
 	 *
-	 * @param name			name of SELECT tag
-	 * @param [defstr]		the value to hilite. Use an array for multiple hilites for listbox.
-	 * @param [blank1stItem]	true to leave the 1st item in list empty
-	 * @param [multiple]		true for listbox, false for popup
-	 * @param [size]		#rows to show for listbox. not used by popup
-	 * @param [selectAttr]		additional attributes to defined for SELECT tag.
-	 *				useful for holding javascript onChange='...' handlers.
-	 & @param [compareFields0]	when we have 2 cols in recordset, we compare the defstr with
-	 *				column 0 (1st col) if this is true. This is not documented.
+	 * If the recordset has 2 columns, we treat the first one as the text to
+	 * display to the user, and the second as the return value. Extra columns
+	 * are discarded.
 	 *
-	 * @return HTML
+	 * @param string       $name            Name of SELECT tag
+	 * @param string|array $defstr          The value to highlight. Use an array for multiple highlight values.
+	 * @param bool|string $blank1stItem     True to create an empty item (default), False not to add one;
+	 *                                      'string' to set its label and 'value:string' to assign a value to it.
+	 * @param bool         $multiple        True for multi-select list
+	 * @param int          $size            Number of rows to show (applies to multi-select box only)
+	 * @param string       $selectAttr      Additional attributes to defined for SELECT tag,
+	 *                                      useful for holding javascript onChange='...' handlers, CSS class, etc.
+	 * @param bool         $compareFirstCol When true (default), $defstr is compared against the value (column 2),
+	 *                                      while false will compare against the description (column 1).
 	 *
-	 * changes by glen.davies@cce.ac.nz to support multiple hilited items
+	 * @return string HTML
 	 */
-	function GetMenu($name,$defstr='',$blank1stItem=true,$multiple=false,
-			$size=0, $selectAttr='',$compareFields0=true)
+	function getMenu($name, $defstr = '', $blank1stItem = true, $multiple = false,
+					 $size = 0, $selectAttr = '', $compareFirstCol = true)
 	{
 		global $ADODB_INCLUDED_LIB;
 		if (empty($ADODB_INCLUDED_LIB)) {
 			include(ADODB_DIR.'/adodb-lib.inc.php');
 		}
-		return _adodb_getmenu($this, $name,$defstr,$blank1stItem,$multiple,
-			$size, $selectAttr,$compareFields0);
+		return _adodb_getmenu($this, $name, $defstr, $blank1stItem, $multiple,
+			$size, $selectAttr, $compareFirstCol);
 	}
-
-
 
 	/**
-	 * Generate a SELECT tag string from a recordset, and return the string.
-	 * If the recordset has 2 cols, we treat the 1st col as the containing
-	 * the text to display to the user, and 2nd col as the return value. Default
-	 * strings are compared with the SECOND column.
+	 * Generate a SELECT tag with groups from a recordset, and return the HTML markup.
 	 *
+	 * The recordset must have 3 columns and be ordered by the 3rd column. The
+	 * first column contains the text to display to the user, the second is the
+	 * return value and the third is the option group. Extra columns are discarded.
+	 * Default strings are compared with the SECOND column.
+	 *
+	 * @param string       $name            Name of SELECT tag
+	 * @param string|array $defstr          The value to highlight. Use an array for multiple highlight values.
+	 * @param bool|string $blank1stItem     True to create an empty item (default), False not to add one;
+	 *                                      'string' to set its label and 'value:string' to assign a value to it.
+	 * @param bool         $multiple        True for multi-select list
+	 * @param int          $size            Number of rows to show (applies to multi-select box only)
+	 * @param string       $selectAttr      Additional attributes to defined for SELECT tag,
+	 *                                      useful for holding javascript onChange='...' handlers, CSS class, etc.
+	 * @param bool         $compareFirstCol When true (default), $defstr is compared against the value (column 2),
+	 *                                      while false will compare against the description (column 1).
+	 *
+	 * @return string HTML
 	 */
-	function GetMenu2($name,$defstr='',$blank1stItem=true,$multiple=false,$size=0, $selectAttr='') {
-		return $this->GetMenu($name,$defstr,$blank1stItem,$multiple,
-			$size, $selectAttr,false);
-	}
-
-	/*
-		Grouped Menu
-	*/
-	function GetMenu3($name,$defstr='',$blank1stItem=true,$multiple=false,
-			$size=0, $selectAttr='')
+	function getMenuGrouped($name, $defstr = '', $blank1stItem = true, $multiple = false,
+							$size = 0, $selectAttr = '', $compareFirstCol = true)
 	{
 		global $ADODB_INCLUDED_LIB;
 		if (empty($ADODB_INCLUDED_LIB)) {
 			include(ADODB_DIR.'/adodb-lib.inc.php');
 		}
-		return _adodb_getmenu_gp($this, $name,$defstr,$blank1stItem,$multiple,
+		return _adodb_getmenu_gp($this, $name, $defstr, $blank1stItem, $multiple,
+			$size, $selectAttr, $compareFirstCol);
+	}
+
+	/**
+	 * Generate a SELECT tag from a recordset, and return the HTML markup.
+	 *
+	 * Same as GetMenu(), except that default strings are compared with the
+	 * FIRST column (the description).
+	 *
+	 * @param string       $name            Name of SELECT tag
+	 * @param string|array $defstr          The value to highlight. Use an array for multiple highlight values.
+	 * @param bool|string $blank1stItem     True to create an empty item (default), False not to add one;
+	 *                                      'string' to set its label and 'value:string' to assign a value to it.
+	 * @param bool         $multiple        True for multi-select list
+	 * @param int          $size            Number of rows to show (applies to multi-select box only)
+	 * @param string       $selectAttr      Additional attributes to defined for SELECT tag,
+	 *                                      useful for holding javascript onChange='...' handlers, CSS class, etc.
+	 *
+	 * @return string HTML
+	 *
+	 * @deprecated 5.21.0 Use getMenu() with $compareFirstCol = false instead.
+	 */
+	function getMenu2($name, $defstr = '', $blank1stItem = true, $multiple = false,
+					  $size = 0, $selectAttr = '')
+	{
+		return $this->getMenu($name, $defstr, $blank1stItem, $multiple,
 			$size, $selectAttr,false);
+	}
+
+	/**
+	 * Generate a SELECT tag with groups from a recordset, and return the HTML markup.
+	 *
+	 * Same as GetMenuGrouped(), except that default strings are compared with the
+	 * FIRST column (the description).
+	 *
+	 * @param string       $name            Name of SELECT tag
+	 * @param string|array $defstr          The value to highlight. Use an array for multiple highlight values.
+	 * @param bool|string $blank1stItem     True to create an empty item (default), False not to add one;
+	 *                                      'string' to set its label and 'value:string' to assign a value to it.
+	 * @param bool         $multiple        True for multi-select list
+	 * @param int          $size            Number of rows to show (applies to multi-select box only)
+	 * @param string       $selectAttr      Additional attributes to defined for SELECT tag,
+	 *                                      useful for holding javascript onChange='...' handlers, CSS class, etc.
+	 *
+	 * @return string HTML
+	 *
+	 * @deprecated 5.21.0 Use getMenuGrouped() with $compareFirstCol = false instead.
+	 */
+	function getMenu3($name, $defstr = '', $blank1stItem = true, $multiple = false,
+					  $size = 0, $selectAttr = '')
+	{
+		return $this->getMenuGrouped($name, $defstr, $blank1stItem, $multiple,
+			$size, $selectAttr, false);
 	}
 
 	/**
@@ -3500,6 +3508,10 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 	 * @return an array indexed by the rows (0-based) from the recordset
 	 */
 	function GetArray($nRows = -1) {
+		global $ADODB_EXTENSION; if ($ADODB_EXTENSION) {
+		$results = adodb_getall($this,$nRows);
+		return $results;
+	}
 		$results = array();
 		$cnt = 0;
 		while (!$this->EOF && $nRows != $cnt) {
@@ -3563,53 +3575,115 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		return $arr;
 	}
 
-	function vGetAssoc($force_array = false, $first2cols = false)
-	{
-		print_r($this);
-		exit;
+	/**
+	 * return whole recordset as a 2-dimensional associative array if there are more than 2 columns.
+	 * The first column is treated as the key and is not included in the array.
+	 * If there is only 2 columns, it will return a 1 dimensional array of key-value pairs unless
+	 * $force_array == true.
+	 *
+	 * @param [force_array] has only meaning if we have 2 data columns. If false, a 1 dimensional
+	 * array is returned, otherwise a 2 dimensional array is returned. If this sounds confusing,
+	 * read the source.
+	 *
+	 * @param [first2cols] means if there are more than 2 cols, ignore the remaining cols and
+	 * instead of returning array[col0] => array(remaining cols), return array[col0] => col1
+	 *
+	 * @return an associative array indexed by the first column of the array,
+	 * or false if the  data has less than 2 cols.
+	 */
+	function GetAssoc($force_array = false, $first2cols = false) {
+		global $ADODB_EXTENSION;
 
 		$cols = $this->_numOfFields;
 		if ($cols < 2) {
-			$false = false;
-			return $false;
+			return false;
 		}
-		$numIndex = is_array($this->fields) && array_key_exists(0, $this->fields);
+
+		// Empty recordset
+		if (!$this->fields) {
+			return array();
+		}
+
+		// Determine whether the array is associative or 0-based numeric
+		$numIndex = array_keys($this->fields) == range(0, count($this->fields) - 1);
+
 		$results = array();
 
 		if (!$first2cols && ($cols > 2 || $force_array)) {
-			if ($numIndex) {
-				while (!$this->EOF) {
-					$results[trim($this->fields[0])] = array_slice($this->fields, 1);
-					$this->MoveNext();
+			if ($ADODB_EXTENSION) {
+				if ($numIndex) {
+					while (!$this->EOF) {
+						$results[trim($this->fields[0])] = array_slice($this->fields, 1);
+						adodb_movenext($this);
+					}
+				} else {
+					while (!$this->EOF) {
+					// Fix for array_slice re-numbering numeric associative keys
+						$keys = array_slice(array_keys($this->fields), 1);
+						$sliced_array = array();
+
+						foreach($keys as $key) {
+							$sliced_array[$key] = $this->fields[$key];
+						}
+
+						$results[trim(reset($this->fields))] = $sliced_array;
+						adodb_movenext($this);
+					}
 				}
 			} else {
-				while (!$this->EOF) {
-				// Fix for array_slice re-numbering numeric associative keys
-					$keys = array_slice(array_keys($this->fields), 1);
-					$sliced_array = array();
-
-					foreach($keys as $key) {
-						$sliced_array[$key] = $this->fields[$key];
+				if ($numIndex) {
+					while (!$this->EOF) {
+						$results[trim($this->fields[0])] = array_slice($this->fields, 1);
+						$this->MoveNext();
 					}
+				} else {
+					while (!$this->EOF) {
+					// Fix for array_slice re-numbering numeric associative keys
+						$keys = array_slice(array_keys($this->fields), 1);
+						$sliced_array = array();
 
-					$results[trim(reset($this->fields))] = $sliced_array;
-					$this->MoveNext();
+						foreach($keys as $key) {
+							$sliced_array[$key] = $this->fields[$key];
+						}
+
+						$results[trim(reset($this->fields))] = $sliced_array;
+						$this->MoveNext();
+					}
 				}
 			}
 		} else {
-			if ($numIndex) {
-				while (!$this->EOF) {
-				// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
-					$results[trim(($this->fields[0]))] = $this->fields[1];
-					$this->MoveNext();
+			if ($ADODB_EXTENSION) {
+				// return scalar values
+				if ($numIndex) {
+					while (!$this->EOF) {
+					// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
+						$results[trim(($this->fields[0]))] = $this->fields[1];
+						adodb_movenext($this);
+					}
+				} else {
+					while (!$this->EOF) {
+					// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
+						$v1 = trim(reset($this->fields));
+						$v2 = ''.next($this->fields);
+						$results[$v1] = $v2;
+						adodb_movenext($this);
+					}
 				}
 			} else {
-				while (!$this->EOF) {
-				// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
-					$v1 = trim(reset($this->fields));
-					$v2 = ''.next($this->fields);
-					$results[$v1] = $v2;
-					$this->MoveNext();
+				if ($numIndex) {
+					while (!$this->EOF) {
+					// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
+						$results[trim(($this->fields[0]))] = $this->fields[1];
+						$this->MoveNext();
+					}
+				} else {
+					while (!$this->EOF) {
+					// some bug in mssql PHP 4.02 -- doesn't handle references properly so we FORCE creating a new string
+						$v1 = trim(reset($this->fields));
+						$v2 = ''.next($this->fields);
+						$results[$v1] = $v2;
+						$this->MoveNext();
+					}
 				}
 			}
 		}
@@ -3617,151 +3691,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		$ref = $results; # workaround accelerator incompat with PHP 4.4 :(
 		return $ref;
 	}
-	/**
-	 * return whole recordset as a 2-dimensional associative array if
-	 * there are more than 2 columns. The first column is treated as the
-	 * key and is not included in the array. If there is only 2 columns,
-	 * it will return a 1 dimensional array of key-value pairs unless
-	 * $force_array == true. This recordset method is currently part of
-	 * the API, but may not be in later versions of ADOdb. By preference, use
-	 * ADOconnnection::getAssoc()
-	 *
-	 * @param bool	$force_array	(optional) Has only meaning if we have 2 data
-	 *								columns. If false, a 1 dimensional
-	 * 								array is returned, otherwise a 2 dimensional
-	 *								array is returned. If this sounds confusing,
-	 * 								read the source.
-	 *
-	 * @param bool	$first2cols 	(optional) Means if there are more than
-	 *								2 cols, ignore the remaining cols and
-	 * 								instead of returning
-	 *								array[col0] => array(remaining cols),
-	 *								return array[col0] => col1
-	 *
-	 * @return mixed
-	 *
-	 */
-	function getAssoc($force_array = false, $first2cols = false)
-	{
-		/*
-		* Insufficient rows to show data
-		*/
-		if ($this->_numOfFields < 2)
-			  return;
 
-		/*
-		* Empty recordset
-		*/
-		if (!$this->fields) {
-			return array();
-		}
-
-		$numberOfFields = $this->_numOfFields;
-		$fetchMode      = $this->fetchMode;
-
-		if ($fetchMode == ADODB_FETCH_BOTH)
-		{
-			/*
-			* build a template of numeric keys. you could improve the
-			* speed by caching this, indexed by number of keys
-			*/
-			$testKeys = array_fill(0,$numberOfFields,0);
-
-			/*
-			* We use the associative method if ADODB_FETCH_BOTH
-			*/
-			$fetchMode = ADODB_FETCH_ASSOC;
-		}
-
-		$showArrayMethod = 0;
-
-		if ($numberOfFields == 2)
-			/*
-			* Key is always value of first element
-			* Value is alway value of second element
-			*/
-			$showArrayMethod = 1;
-
-		if ($force_array)
-			$showArrayMethod = 0;
-
-		if ($first2cols)
-			$showArrayMethod = 1;
-
-		$results  = array();
-
-		while (!$this->EOF){
-
-			$myFields = $this->fields;
-
-			if ($this->fetchMode == ADODB_FETCH_BOTH)
-			{
-				/*
-				* extract the associative keys
-				*/
-				$myFields = array_diff_key($myFields,$testKeys);
-			}
-
-			/*
-			* key is value of first element, rest is data,
-			* casing is already handled by the driver (but see below)
-			*/
-			$key = array_shift($myFields);
-			if (ADODB_ASSOC_CASE == ADODB_ASSOC_CASE_UPPER)
-				$key = strtoupper($key);
-			elseif (ADODB_ASSOC_CASE == ADODB_ASSOC_CASE_LOWER)
-				$key = strtolower($key);
-
-			switch ($showArrayMethod)
-			{
-			case 0:
-
-				if ($fetchMode == ADODB_FETCH_ASSOC)
-				{
-					/*
-					* The driver should have already handled the key
-					* casing, but in case it did not. We will check and force
-					* this in later versions of ADOdb
-					*/
-					if (ADODB_ASSOC_CASE == ADODB_ASSOC_CASE_UPPER)
-						$myFields = array_change_key_case($myFields,CASE_UPPER);
-
-					elseif (ADODB_ASSOC_CASE == ADODB_ASSOC_CASE_LOWER)
-						$myFields = array_change_key_case($myFields,CASE_LOWER);
-
-					/*
-					* We have already shifted the key off
-					* the front, so the rest is the value
-					*/
-					$results[$key] = $myFields;
-
-				}
-				else
-					/*
-					 * I want the values in a numeric array,
-					 * nicely re-indexed from zero
-					 */
-					$results[$key] = array_values($myFields);
-				break;
-
-			case 1:
-
-				/*
-				 * Don't care how long the array is,
-				 * I just want value of second column, and it doesn't
-				 * matter whether the array is associative or numeric
-				 */
-				$results[$key] = array_shift($myFields);
-				break;
-			}
-
-			$this->MoveNext();
-		}
-		/*
-		 * Done
-		 */
-		return $results;
-	}
 
 	/**
 	 *
@@ -3981,11 +3911,18 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 			if ($rowNumber < $this->_currentRow) {
 				return false;
 			}
-			while (! $this->EOF && $this->_currentRow < $rowNumber) {
-				$this->_currentRow++;
+			global $ADODB_EXTENSION;
+			if ($ADODB_EXTENSION) {
+				while (!$this->EOF && $this->_currentRow < $rowNumber) {
+					adodb_movenext($this);
+				}
+			} else {
+				while (! $this->EOF && $this->_currentRow < $rowNumber) {
+					$this->_currentRow++;
 
-				if (!$this->_fetch()) {
-					$this->EOF = true;
+					if (!$this->_fetch()) {
+						$this->EOF = true;
+					}
 				}
 			}
 			return !($this->EOF);
@@ -4324,7 +4261,6 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 			$len = $fieldobj->max_length;
 		}
 
-
 		// changed in 2.32 to hashing instead of switch stmt for speed...
 		static $typeMap = array(
 			'VARCHAR' => 'C',
@@ -4431,10 +4367,9 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 			"SQLBOOL" => 'L'
 		);
 
-
 		$tmap = false;
 		$t = strtoupper($t);
-		$tmap = (isset($typeMap[$t])) ? $typeMap[$t] : ADODB_DEFAULT_METATYPE;
+		$tmap = (isset($typeMap[$t])) ? $typeMap[$t] : 'N';
 		switch ($tmap) {
 			case 'C':
 				// is the char field is too long, return as text field...
@@ -4807,13 +4742,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 				break;
 
 			default:
-				if (substr($db, 0, 4) === 'pdo_') {
-					ADOConnection::outp("Invalid database type: $db");
-					return false;
-				}
-
-				$class = $db;
-				break;
+				$class = $db; break;
 		}
 
 		$file = "drivers/adodb-$db.inc.php";

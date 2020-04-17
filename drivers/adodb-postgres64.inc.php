@@ -1,6 +1,6 @@
 <?php
 /*
- @version   v5.20.13  06-Aug-2018
+ @version   v5.20.17  31-Mar-2020
  @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
  @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -123,6 +123,11 @@ class ADODB_postgres64 extends ADOConnection{
 	// I'm not familiar enough with both ADODB as well as Postgres
 	// to know what the concequences are. The other values are correct (wheren't in 0.94)
 	// -- Freek Dijkstra
+
+	function __construct()
+	{
+		// changes the metaColumnsSQL, adds columns: attnum[6]
+	}
 
 	function ServerInfo()
 	{
@@ -425,17 +430,13 @@ class ADODB_postgres64 extends ADOConnection{
 		return $realblob;
 	}
 
-	/**
-	 * Encode binary value prior to DB storage.
-	 *
-	 * See https://www.postgresql.org/docs/current/static/datatype-binary.html
-	 *
-	 * NOTE: SQL string literals (input strings) must be preceded with two
-	 * backslashes due to the fact that they must pass through two parsers in
-	 * the PostgreSQL backend.
-	 *
-	 * @param string $blob
-	 */
+	/*
+		See http://www.postgresql.org/idocs/index.php?datatype-binary.html
+
+		NOTE: SQL string literals (input strings) must be preceded with two backslashes
+		due to the fact that they must pass through two parsers in the PostgreSQL
+		backend.
+	*/
 	function BlobEncode($blob)
 	{
 		if (ADODB_PHPVER >= 0x5200) return pg_escape_bytea($this->_connectionID, $blob);
@@ -1067,7 +1068,6 @@ class ADORecordSet_postgres64 extends ADORecordSet{
 				case 'NAME':
 				case 'BPCHAR':
 				case '_VARCHAR':
-				case 'CIDR':
 				case 'INET':
 				case 'MACADDR':
 					if ($len <= $this->blobSize) return 'C';
@@ -1111,7 +1111,7 @@ class ADORecordSet_postgres64 extends ADORecordSet{
 					return 'R';
 
 				default:
-					return ADODB_DEFAULT_METATYPE;
+					return 'N';
 			}
 	}
 

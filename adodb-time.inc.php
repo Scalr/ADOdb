@@ -4,7 +4,7 @@ ADOdb Date Library, part of the ADOdb abstraction library
 
 Latest version is available at http://adodb.org/
 
-@version   v5.20.13  06-Aug-2018
+@version   v5.20.17  31-Mar-2020
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -421,6 +421,9 @@ $ADODB_DATETIME_CLASS = (PHP_VERSION >= 5.2);
 
 if (!defined('ADODB_ALLOW_NEGATIVE_TS')) define('ADODB_NO_NEGATIVE_TS',1);
 
+if (!DEFINED('ADODB_FUTURE_DATE_CUTOFF_YEARS'))
+	DEFINE('ADODB_FUTURE_DATE_CUTOFF_YEARS',200);
+
 function adodb_date_test_date($y1,$m,$d=13)
 {
 	$h = round(rand()% 24);
@@ -830,12 +833,22 @@ global $_month_table_normal,$_month_table_leaf;
 function _adodb_getdate($origd=false,$fast=false,$is_gmt=false)
 {
 static $YRS;
-global $_month_table_normal,$_month_table_leaf;
+global $_month_table_normal,$_month_table_leaf, $_adodb_last_date_call_failed;
+
+	$_adodb_last_date_call_failed = false;
 
 	$d =  $origd - ($is_gmt ? 0 : adodb_get_gmt_diff_ts($origd));
 	$_day_power = 86400;
 	$_hour_power = 3600;
 	$_min_power = 60;
+
+	$cutoffDate = time() + (60 * 60 * 24 * 365 * ADODB_FUTURE_DATE_CUTOFF_YEARS);
+
+	if ($d > $cutoffDate)
+	{
+		$d = $cutoffDate;
+		$_adodb_last_date_call_failed = true;
+	}
 
 	if ($d < -12219321600) $d -= 86400*10; // if 15 Oct 1582 or earlier, gregorian correction
 
@@ -1072,6 +1085,7 @@ static $daylight;
 global $ADODB_DATETIME_CLASS;
 static $jan1_1971;
 
+
 	if (!isset($daylight)) {
 		$daylight = function_exists('adodb_daylight_sv');
 		if (empty($jan1_1971)) $jan1_1971 = mktime(0,0,0,1,1,1971); // we only use date() when > 1970 as adodb_mktime() only uses mktime() when > 1970
@@ -1079,15 +1093,7 @@ static $jan1_1971;
 
 	if ($d === false) return ($is_gmt)? @gmdate($fmt): @date($fmt);
 	if (!defined('ADODB_TEST_DATES')) {
-
-		/*
-		* Format 'Q' is an ADOdb custom format, not supported in PHP
-		* so if there is a 'Q' in the format, we force it to use our
-		* function. There is a trivial overhead in this
-		*/
-
-		if ((abs($d) <= 0x7FFFFFFF) && strpos($fmt,'Q') === false)
-		{ // check if number in 32-bit signed range
+		if ((abs($d) <= 0x7FFFFFFF)) { // check if number in 32-bit signed range
 
 			if (!defined('ADODB_NO_NEGATIVE_TS') || $d >= $jan1_1971) // if windows, must be +ve integer
 				return ($is_gmt)? @gmdate($fmt,$d): @date($fmt,$d);
@@ -1153,9 +1159,7 @@ static $jan1_1971;
 		case 'y': $dates .= substr($year,strlen($year)-2,2); break;
 		// MONTH
 		case 'm': if ($month<10) $dates .= '0'.$month; else $dates .= $month; break;
-		case 'Q':
-			$dates .= ceil($month / 3);
-			break;
+		case 'Q': $dates .= ($month+3)>>2; break;
 		case 'n': $dates .= $month; break;
 		case 'M': $dates .= date('M',mktime(0,0,0,$month,2,1971)); break;
 		case 'F': $dates .= date('F',mktime(0,0,0,$month,2,1971)); break;
@@ -1163,9 +1167,6 @@ static $jan1_1971;
 		case 't': $dates .= $arr['ndays']; break;
 		case 'z': $dates .= $arr['yday']; break;
 		case 'w': $dates .= adodb_dow($year,$month,$day); break;
-		case 'W':
-			$dates .= sprintf('%02d',ceil( $arr['yday'] / 7) - 1);
-			break;
 		case 'l': $dates .= gmdate('l',$_day_power*(3+adodb_dow($year,$month,$day))); break;
 		case 'D': $dates .= gmdate('D',$_day_power*(3+adodb_dow($year,$month,$day))); break;
 		case 'j': $dates .= $day; break;
@@ -1472,4 +1473,17 @@ global $ADODB_DATE_LOCALE;
 	if ($ts === false) $ts = time();
 	$ret = adodb_date($fmtdate, $ts, $is_gmt);
 	return $ret;
+}
+
+/**
+* Returns the status of the last date calculation and whether it exceeds
+* the limit of ADODB_FUTURE_DATE_CUTOFF_YEARS
+*
+* @return boolean
+*/
+function adodb_last_date_status()
+{
+	global $_adodb_last_date_call_failed;
+
+	return $_adodb_last_date_call_failed;
 }
